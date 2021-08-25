@@ -63,4 +63,12 @@ public class URLMetrics {
         this.urlId = urlId;
     }
 
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
 }

@@ -4,6 +4,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -128,56 +129,9 @@ public class UrlShortenerController {
         return response;
     }
 
-    @GetMapping(path = "${pathPattern:/urlmetrics/{id}}")
-
-    public ResponseEntity<GetURLMetricsResponse> getUrlMetrics(@PathVariable("id") final String id,
-            @RequestParam(required = false) final String user) {
-
-        final StopWatch sw = new StopWatch();
-        sw.start();
-
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Start getLongURL() for user {} and short url {}", user, id);
-        }
-
-        ResponseEntity<GetURLMetricsResponse> response = new ResponseEntity<>(HttpStatus.OK);
-        URLMetrics urlMetrics = null;
-        try {
-
-            GetURLMetricsResponse getResponse = new GetURLMetricsResponse();
-
-            urlMetrics = metricsService.getURLMEtrics(id);
-
-            if (urlMetrics != null) {
-                getResponse = Mapper.convertGetURLMetricsEntityToResponse(urlMetrics);
-            } else {
-                throw new Exception("The urlmetrics corresponding to the given short url " + id + " is not found.");
-            }
-            response = new ResponseEntity<>(getResponse, HttpStatus.OK);
-
-        } catch (final Exception e) {
-            LOGGER.error("Could not get the long url", e);
-            final GetURLMetricsResponse getResponse = new GetURLMetricsResponse();
-
-            getResponse.setResponseMessage(e.getMessage());
-
-            response = new ResponseEntity<>(getResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-
-        } finally {
-            sw.stop();
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("End getLongURL() with the response object\n" + response.toString());
-            }
-
-        }
-
-        return response;
-    }
-
     @GetMapping(path = "${pathPattern:/urls/{id}}")
-
-    public RedirectView redirectLongURL(@PathVariable("id") final String id,
-            @RequestParam(required = false) final String user) {
+    public ResponseEntity<GetLongURLResponse> getLongURL(@PathVariable("id") final String id,
+            @RequestParam(required = false) final String user) throws Exception {
 
         final StopWatch sw = new StopWatch();
         sw.start();
@@ -206,7 +160,7 @@ public class UrlShortenerController {
             // Save the metrics
             URLMetrics metrics = new URLMetrics();
 
-            final Optional<URLMetrics> optionalMetrics = metricsRepository.findByUrlId(id);
+            final Optional<URLMetrics> optionalMetrics = metricsRepository.findByUrlIdAndCaller(id, user);
             if (optionalMetrics.isPresent()) {
                 metrics = optionalMetrics.get();
                 final int accessCount = metrics.getAccessCount() + 1;
@@ -217,6 +171,119 @@ public class UrlShortenerController {
                 metrics.setDatetime(LocalDateTime.now());
                 metrics.setCaller(user);
                 metrics.setAccessCount(1);
+                metrics.setUrlId(id);
+            }
+
+            metricsRepository.save(metrics);
+
+        } catch (final Exception e) {
+            LOGGER.error("Could not get the long url", e);
+            GetLongURLResponse getResponse = new GetLongURLResponse();
+            getResponse = new GetLongURLResponse();
+            getResponse.setResponseMessage(e.getMessage());
+
+            response = new ResponseEntity<>(getResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+
+        } finally {
+            sw.stop();
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("End getLongURL() with the response object\n" + response.toString());
+            }
+
+        }
+
+        return response;
+    }
+
+    @GetMapping(path = "${pathPattern:/urlmetrics/{id}}")
+
+    public ResponseEntity<GetURLMetricsResponse> getUrlMetrics(@PathVariable("id") final String id,
+            @RequestParam(required = false) final String user) {
+
+        final StopWatch sw = new StopWatch();
+        sw.start();
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Start getLongURL() for user {} and short url {}", user, id);
+        }
+
+        ResponseEntity<GetURLMetricsResponse> response = new ResponseEntity<>(HttpStatus.OK);
+        Iterable<URLMetrics> urlMetrics = null;
+        try {
+
+            GetURLMetricsResponse getResponse = new GetURLMetricsResponse();
+
+            urlMetrics = metricsService.getURLMEtrics(id);
+
+            if (urlMetrics != null && ((Collection<?>) urlMetrics).size() != 0) {
+                getResponse = Mapper.convertGetURLMetricsEntityToResponse(urlMetrics);
+            } else {
+                throw new Exception("The urlmetrics corresponding to the given short url " + id + " is not found.");
+            }
+            response = new ResponseEntity<>(getResponse, HttpStatus.OK);
+
+        } catch (final Exception e) {
+            LOGGER.error("Could not get the long url", e);
+            final GetURLMetricsResponse getResponse = new GetURLMetricsResponse();
+
+            getResponse.setResponseMessage(e.getMessage());
+
+            response = new ResponseEntity<>(getResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+
+        } finally {
+            sw.stop();
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("End getLongURL() with the response object\n" + response.toString());
+            }
+
+        }
+
+        return response;
+    }
+
+    @GetMapping(path = "${pathPattern:/{id}}")
+    public RedirectView redirectLongURL(@PathVariable("id") final String id,
+            @RequestParam(required = false) final String user) throws Exception {
+
+        final StopWatch sw = new StopWatch();
+        sw.start();
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Start getLongURL() for user {} and short url {}", user, id);
+        }
+
+        ResponseEntity<GetLongURLResponse> response = new ResponseEntity<>(HttpStatus.OK);
+        Optional<URL> url = null;
+        try {
+
+            GetLongURLResponse getResponse = new GetLongURLResponse();
+            if (user == null) {
+                url = service.getURL(id);
+            } else {
+                url = service.getURL(user, id);
+            }
+            if (url.isPresent()) {
+                getResponse = Mapper.convertGetURLEntityToResponse(url.get());
+            } else {
+                throw new Exception("The url corresponding to the given short url " + id + " for the user " + user
+                        + " is not found.");
+            }
+            response = new ResponseEntity<>(getResponse, HttpStatus.OK);
+            // Save the metrics
+            URLMetrics metrics = new URLMetrics();
+
+            final Optional<URLMetrics> optionalMetrics = metricsRepository.findByUrlIdAndCaller(id, user);
+            if (optionalMetrics.isPresent()) {
+                metrics = optionalMetrics.get();
+                final int accessCount = metrics.getAccessCount() + 1;
+                metrics.setDatetime(LocalDateTime.now());
+                metrics.setCaller(user);
+                metrics.setAccessCount(accessCount);
+            } else {
+                metrics.setDatetime(LocalDateTime.now());
+                metrics.setCaller(user);
+                metrics.setAccessCount(1);
+                metrics.setUrlId(id);
             }
 
             metricsRepository.save(metrics);
@@ -237,7 +304,11 @@ public class UrlShortenerController {
 
         }
         final RedirectView redirectView = new RedirectView();
-        redirectView.setUrl(url.get().getURL());
+        if (url.isPresent()) {
+            redirectView.setUrl("http://" + url.get().getURL());
+        } else {
+            throw new Exception("Website not found. 404");
+        }
 
         return redirectView;
     }

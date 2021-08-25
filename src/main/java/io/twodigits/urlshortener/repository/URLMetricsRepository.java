@@ -17,6 +17,8 @@ public interface URLMetricsRepository extends CrudRepository<URLMetrics, UUID> {
      * @return a URLMetric object
      */
 
-    Optional<URLMetrics> findByUrlId(String id);
+    public Iterable<URLMetrics> findByUrlId(String id);
+
+    public Optional<URLMetrics> findByUrlIdAndCaller(String id, String caller);
 
 }

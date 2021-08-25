@@ -1,39 +1,73 @@
 package io.twodigits.urlshortener.dto;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class GetURLMetricsResponse {
-    private UUID          id;
+    public static class eachMetric {
+        private UUID          id;
 
-    private String        urlId;
+        private String        urlId;
 
-    private int           accessCount;
+        private int           accessCount;
 
-    private String        caller;
+        private String        caller;
 
-    private LocalDateTime lastAccessedDatetime;
+        private LocalDateTime lastAccessedDatetime;
 
-    private String        responseCode;
+        public int getAccessCount() {
+            return accessCount;
+        }
 
-    private String        responseMessage;
+        public String getCaller() {
+            return caller;
+        }
 
-    private Long          responseDuration;
+        public UUID getId() {
+            return id;
+        }
 
-    public int getAccessCount() {
-        return accessCount;
+        public LocalDateTime getLastAccessedDatetime() {
+            return lastAccessedDatetime;
+        }
+
+        public String getUrlId() {
+            return urlId;
+        }
+
+        public void setAccessCount(final int accessCount) {
+            this.accessCount = accessCount;
+        }
+
+        public void setCaller(final String caller) {
+            this.caller = caller;
+        }
+
+        public void setId(final UUID id) {
+            this.id = id;
+        }
+
+        public void setLastAccessedDatetime(final LocalDateTime lastAccessedDatetime) {
+            this.lastAccessedDatetime = lastAccessedDatetime;
+        }
+
+        public void setUrlId(final String urlId) {
+            this.urlId = urlId;
+        }
     }
 
-    public String getCaller() {
-        return caller;
-    }
+    private String           responseCode;
 
-    public UUID getId() {
-        return id;
-    }
+    private String           responseMessage;
 
-    public LocalDateTime getLastAccessedDatetime() {
-        return lastAccessedDatetime;
+    private Long             responseDuration;
+
+    private List<eachMetric> metrics = new ArrayList<>();
+
+    public List<eachMetric> getMetrics() {
+        return metrics;
     }
 
     public String getResponseCode() {
@@ -48,24 +82,8 @@ public class GetURLMetricsResponse {
         return responseMessage;
     }
 
-    public String getUrlId() {
-        return urlId;
-    }
-
-    public void setAccessCount(final int accessCount) {
-        this.accessCount = accessCount;
-    }
-
-    public void setCaller(final String caller) {
-        this.caller = caller;
-    }
-
-    public void setId(final UUID id) {
-        this.id = id;
-    }
-
-    public void setLastAccessedDatetime(final LocalDateTime lastAccessedDatetime) {
-        this.lastAccessedDatetime = lastAccessedDatetime;
+    public void setMetrics(final List<eachMetric> metrics) {
+        this.metrics = metrics;
     }
 
     public void setResponseCode(final String responseCode) {
@@ -80,7 +98,4 @@ public class GetURLMetricsResponse {
         this.responseMessage = responseMessage;
     }
 
-    public void setUrlId(final String urlId) {
-        this.urlId = urlId;
-    }
 }

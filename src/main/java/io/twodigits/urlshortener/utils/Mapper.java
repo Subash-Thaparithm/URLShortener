@@ -4,6 +4,7 @@ import io.twodigits.urlshortener.dto.CreateShortURLResponse;
 import io.twodigits.urlshortener.dto.DeleteShortURLResponse;
 import io.twodigits.urlshortener.dto.GetLongURLResponse;
 import io.twodigits.urlshortener.dto.GetURLMetricsResponse;
+import io.twodigits.urlshortener.dto.GetURLMetricsResponse.eachMetric;
 import io.twodigits.urlshortener.model.URL;
 import io.twodigits.urlshortener.model.URLMetrics;
 
@@ -32,14 +33,20 @@ public class Mapper {
         return response;
     }
 
-    public static GetURLMetricsResponse convertGetURLMetricsEntityToResponse(final URLMetrics metrics) {
+    public static GetURLMetricsResponse convertGetURLMetricsEntityToResponse(final Iterable<URLMetrics> metrics) {
         final GetURLMetricsResponse response = new GetURLMetricsResponse();
 
-        response.setAccessCount(metrics.getAccessCount());
-        response.setCaller(metrics.getCaller());
-        response.setLastAccessedDatetime(metrics.getDatetime());
-        response.setUrlId(metrics.getUrlId());
+        for (final URLMetrics metric : metrics) {
+            final eachMetric eachmetric = new eachMetric();
 
+            eachmetric.setAccessCount(metric.getAccessCount());
+            eachmetric.setCaller(metric.getCaller());
+            eachmetric.setLastAccessedDatetime(metric.getDatetime());
+            eachmetric.setUrlId(metric.getUrlId());
+            eachmetric.setId(metric.getId());
+
+            response.getMetrics().add(eachmetric);
+        }
         return response;
     }
 }
