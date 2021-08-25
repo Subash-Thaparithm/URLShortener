@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,10 +68,10 @@ public class UrlShortenerController {
         ResponseEntity<CreateShortURLResponse> response = new ResponseEntity<>(HttpStatus.OK);
 
         try {
-
+            final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            final String user = authentication.getName();
             response = new ResponseEntity<>(
-                    Mapper.convertCreateURLEntityToResponse(service.addURL(body.getUser(), body.getURL())),
-                    HttpStatus.CREATED);
+                    Mapper.convertCreateURLEntityToResponse(service.addURL(user, body.getURL())), HttpStatus.CREATED);
 
         } catch (final UrlShortenerException e) {
             LOGGER.error("Could not create a new list", e);
@@ -157,24 +159,6 @@ public class UrlShortenerController {
                         + " is not found.");
             }
             response = new ResponseEntity<>(getResponse, HttpStatus.OK);
-            // Save the metrics
-            URLMetrics metrics = new URLMetrics();
-
-            final Optional<URLMetrics> optionalMetrics = metricsRepository.findByUrlIdAndCaller(id, user);
-            if (optionalMetrics.isPresent()) {
-                metrics = optionalMetrics.get();
-                final int accessCount = metrics.getAccessCount() + 1;
-                metrics.setDatetime(LocalDateTime.now());
-                metrics.setCaller(user);
-                metrics.setAccessCount(accessCount);
-            } else {
-                metrics.setDatetime(LocalDateTime.now());
-                metrics.setCaller(user);
-                metrics.setAccessCount(1);
-                metrics.setUrlId(id);
-            }
-
-            metricsRepository.save(metrics);
 
         } catch (final Exception e) {
             LOGGER.error("Could not get the long url", e);
@@ -242,11 +226,13 @@ public class UrlShortenerController {
     }
 
     @GetMapping(path = "${pathPattern:/{id}}")
-    public RedirectView redirectLongURL(@PathVariable("id") final String id,
-            @RequestParam(required = false) final String user) throws Exception {
+    public RedirectView redirectLongURL(@PathVariable("id") final String id) throws Exception {
 
         final StopWatch sw = new StopWatch();
         sw.start();
+
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        final String user = authentication.getName();
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Start getLongURL() for user {} and short url {}", user, id);
@@ -257,11 +243,9 @@ public class UrlShortenerController {
         try {
 
             GetLongURLResponse getResponse = new GetLongURLResponse();
-            if (user == null) {
-                url = service.getURL(id);
-            } else {
-                url = service.getURL(user, id);
-            }
+
+            url = service.getURL(id);
+
             if (url.isPresent()) {
                 getResponse = Mapper.convertGetURLEntityToResponse(url.get());
             } else {
